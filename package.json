@@ -1,0 +1,16 @@
+{
+  "name": "stl-generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jimp": "^0.22.12",
+    "three": "^0.163.0",
+    "ws": "^8.17.0"
+  }
+}

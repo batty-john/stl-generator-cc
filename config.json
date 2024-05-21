@@ -1,0 +1,13 @@
+{
+    "inputImagePath": "rayla1.png",
+    "outputSTLPath": "rayla1.stl",
+    "maxDimension": 974,
+    "minThickness": 8,
+    "maxThickness": 40,
+    "frameWidth": 20,
+    "hangars": 1,
+    "hangarWidth": 50,
+    "hangarThickness": 10,
+    "scaleFactor": 0.1
+  }
+  
