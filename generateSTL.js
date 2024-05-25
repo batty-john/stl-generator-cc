@@ -6,13 +6,8 @@ const fetch = require('node-fetch');
 const config = require('./config.json');
 
 // Main function to generate STL
-async function generateSTL(imageUrl, hangars, outputDir) {
+async function generateSTL(imageUrl, hangars, outputDir, outputFileName) {
     try {
-        // Ensure the output directory exists
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
-
         // Fetch the image from the server
         const response = await fetch(imageUrl);
         const buffer = await response.buffer();
@@ -87,13 +82,17 @@ async function generateSTL(imageUrl, hangars, outputDir) {
         geometry.computeVertexNormals();
 
         // Create output paths
-        const outputSTLPath = path.join(outputDir, 'output.stl');
-        const outputBinarySTLPath = path.join(outputDir, 'output-binary.stl');
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const outputSTLPath = path.join(outputDir, `${outputFileName}-ascii.stl`);
+        const outputBinarySTLPath = path.join(outputDir, `${outputFileName}.stl`);
 
         // Export to STL
-        const stlString = exportToSTL(geometry);
-        fs.writeFileSync(outputSTLPath, stlString);
-        console.log('STL file created successfully:', outputSTLPath);
+        //const stlString = exportToSTL(geometry);
+        //fs.writeFileSync(outputSTLPath, stlString);
+        //console.log('STL file created successfully:', outputSTLPath);
 
         // Export Binary STL
         const binarySTL = exportToBinarySTL(geometry);
@@ -103,8 +102,6 @@ async function generateSTL(imageUrl, hangars, outputDir) {
         console.error('Error processing the image:', err);
     }
 }
-
-module.exports = generateSTL;
 
 function scaleGeometry(geometry, scaleFactor) {
     const positionAttribute = geometry.getAttribute('position');
@@ -128,8 +125,8 @@ function addHangars(geometry, width, height, frameWidth, maxThickness, config) {
     const outerRadius = hangarWidth / 2;
     const innerRadius = outerRadius - config.hangarThickness;
     const segments = 16;
-    const x1 = width / 5 - outerRadius;
-    const x2 = 4 * width / 5 - outerRadius;
+    const x1 = width / 3 - outerRadius;
+    const x2 = 2 * width / 3 - outerRadius;
     const yTop = 0 - outerRadius;
     const zFront = maxThickness;
     const zBack = 0;
@@ -332,3 +329,4 @@ function calculateNormal(v1, v2, v3) {
 }
 
 module.exports = generateSTL;
+

@@ -1,16 +1,25 @@
 const WebSocket = require('ws');
 const generateSTL = require('./generateSTL');
 const path = require('path');
-const fetch = require('node-fetch');
 
 async function processOrder(orderID, items) {
     try {
+        console.log('Order ID:', orderID);
+        console.log('Items:', items);
+
         for (const item of items) {
-            for (const image of item.images) {
+            if (!Array.isArray(item.images)) {
+                throw new Error('Invalid item data: images is not an array');
+            }
+
+            for (const [index, image] of item.images.entries()) {
+                console.log('Processing image:', image);
+
                 // Constructing an absolute URL for the image
                 const imageUrl = `https://lithophane-generator-76e9a8bbe995.herokuapp.com/finalized-uploads/${image}`;
                 const outputDir = path.join(__dirname, 'stl-outputs', `order_${orderID}`, `item_${item.itemID}`);
-                await generateSTL(imageUrl, item.hasHangars, outputDir);
+                const outputFileName = `order_${orderID}_item_${item.itemID}_image_${index + 1}`;
+                await generateSTL(imageUrl, item.hanger, outputDir, outputFileName);
             }
         }
         console.log(`Order ${orderID} processed successfully`);
@@ -18,6 +27,7 @@ async function processOrder(orderID, items) {
         console.error(`Error processing order ${orderID}:`, error);
     }
 }
+
 
 function createWebSocket() {
     const ws = new WebSocket('wss://lithophane-generator-76e9a8bbe995.herokuapp.com/');
@@ -31,6 +41,7 @@ function createWebSocket() {
         console.log('Received message:', data);
         const message = JSON.parse(data);
         if (message.event === 'generateSTL') {
+            console.log('Processing message:', message);
             processOrder(message.orderID, message.items);
         }
     });
@@ -71,6 +82,8 @@ function startPing(socket) {
 
 // Initial WebSocket connection
 createWebSocket();
+
+
 
 
 
