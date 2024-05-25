@@ -125,8 +125,8 @@ function addHangars(geometry, width, height, frameWidth, maxThickness, config) {
     const outerRadius = hangarWidth / 2;
     const innerRadius = outerRadius - config.hangarThickness;
     const segments = 16;
-    const x1 = width / 3 - outerRadius;
-    const x2 = 2 * width / 3 - outerRadius;
+    const x1 = width / 5 - outerRadius;
+    const x2 = 4 * width / 5 - outerRadius;
     const yTop = 0 - outerRadius;
     const zFront = maxThickness;
     const zBack = 0;
