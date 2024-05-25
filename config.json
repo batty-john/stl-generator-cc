@@ -2,6 +2,7 @@
     "inputImagePath": "rayla1.png",
     "outputSTLPath": "rayla1.stl",
     "maxDimension": 974,
+    "maxDimension6x4": 1461,
     "minThickness": 8,
     "maxThickness": 40,
     "frameWidth": 20,

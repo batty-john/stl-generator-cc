@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 const config = require('./config.json');
 
 // Main function to generate STL
-async function generateSTL(imageUrl, hangars, outputDir, outputFileName) {
+async function generateSTL(imageUrl, hangars, outputDir, outputFileName, aspectRatio = '4x4') {
     try {
         // Fetch the image from the server
         const response = await fetch(imageUrl);
@@ -14,8 +14,23 @@ async function generateSTL(imageUrl, hangars, outputDir, outputFileName) {
 
         // Process the image with Jimp
         let image = await Jimp.read(buffer);
-        const scalingFactor = Math.min(1, config.maxDimension / image.bitmap.width, config.maxDimension / image.bitmap.height);
-        image.resize(image.bitmap.width * scalingFactor, image.bitmap.height * scalingFactor);
+
+        let targetWidth, targetHeight;
+        if (aspectRatio === '4x4') {
+            targetWidth = config.maxDimension; // 4 inches
+            targetHeight = config.maxDimension; // 4 inches
+        } else if (aspectRatio === '6x4') {
+            targetWidth = config.maxDimension * 1.5; // 6 inches
+            targetHeight = config.maxDimension; // 4 inches
+        } else if (aspectRatio === '4x6') {
+            targetWidth = config.maxDimension; // 4 inches
+            targetHeight = config.maxDimension * 1.5; // 6 inches
+        } else {
+            throw new Error('Unsupported aspect ratio');
+        }
+
+        // Ensure the image is upscaled to reach the target dimensions
+        image.cover(targetWidth, targetHeight, Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE);
         await image.grayscale();
 
         // Add 1 px black border around the image
@@ -329,4 +344,3 @@ function calculateNormal(v1, v2, v3) {
 }
 
 module.exports = generateSTL;
-

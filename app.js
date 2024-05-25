@@ -12,6 +12,9 @@ async function processOrder(orderID, items) {
                 throw new Error('Invalid item data: images is not an array');
             }
 
+            const aspectRatio = item.aspectRatio; // Use the aspect ratio passed from notifySTLGeneration
+            console.log('Aspect ratio:', aspectRatio);
+
             for (const [index, image] of item.images.entries()) {
                 console.log('Processing image:', image);
 
@@ -19,7 +22,7 @@ async function processOrder(orderID, items) {
                 const imageUrl = `https://lithophane-generator-76e9a8bbe995.herokuapp.com/finalized-uploads/${image}`;
                 const outputDir = path.join(__dirname, 'stl-outputs', `order_${orderID}`, `item_${item.itemID}`);
                 const outputFileName = `order_${orderID}_item_${item.itemID}_image_${index + 1}`;
-                await generateSTL(imageUrl, item.hanger, outputDir, outputFileName);
+                await generateSTL(imageUrl, item.hanger, outputDir, outputFileName, aspectRatio);
             }
         }
         console.log(`Order ${orderID} processed successfully`);
@@ -27,6 +30,8 @@ async function processOrder(orderID, items) {
         console.error(`Error processing order ${orderID}:`, error);
     }
 }
+
+
 
 
 function createWebSocket() {
