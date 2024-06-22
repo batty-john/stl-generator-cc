@@ -2,18 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
 const THREE = require('three');
-const fetch = require('node-fetch');
 const config = require('./config.json');
 
 // Main function to generate STL
-async function generateSTL(imageUrl, hangars, outputDir, outputFileName, aspectRatio = '4x4') {
+async function generateSTL(imagePath, hangars, outputDir, outputFileName, aspectRatio = '4x4') {
     try {
-        // Fetch the image from the server
-        const response = await fetch(imageUrl);
-        const buffer = await response.buffer();
-
-        // Process the image with Jimp
-        let image = await Jimp.read(buffer);
+        // Read the image
+        const image = await Jimp.read(imagePath);
 
         let targetWidth, targetHeight;
         if (aspectRatio === '4x4') {
@@ -34,28 +29,18 @@ async function generateSTL(imageUrl, hangars, outputDir, outputFileName, aspectR
         await image.grayscale();
 
         // Add 1 px black border around the image
-        image = await new Promise((resolve, reject) => {
-            const newWidth = image.bitmap.width + 2;
-            const newHeight = image.bitmap.height + 2;
-            new Jimp(newWidth, newHeight, 0x000000FF, (err, borderedImage) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    borderedImage.composite(image, 1, 1); // Composite the original image onto the new larger black image at position (1,1)
-                    resolve(borderedImage); // Resolve the Promise with the new image
-                }
-            });
-        });
+        const borderedImage = await new Jimp(image.bitmap.width + 2, image.bitmap.height + 2, 0x000000FF);
+        borderedImage.composite(image, 1, 1); // Composite the original image onto the new larger black image at position (1,1)
 
-        const width = image.bitmap.width;
-        const height = image.bitmap.height;
+        const width = borderedImage.bitmap.width;
+        const height = borderedImage.bitmap.height;
         const vertices = [];
         const indices = [];
 
         // Generate vertices based on grayscale values
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const gray = Jimp.intToRGBA(image.getPixelColor(x, y)).r;
+                const gray = Jimp.intToRGBA(borderedImage.getPixelColor(x, y)).r;
                 const z = config.maxThickness - (config.maxThickness - config.minThickness) * (gray / 255);
                 vertices.push((width - 1 - x), y, z); // Mirror the x coordinate by subtracting x from width - 1
             }
@@ -81,7 +66,6 @@ async function generateSTL(imageUrl, hangars, outputDir, outputFileName, aspectR
 
         // Add frame to the geometry
         const corners = addFrame(geometry, width, height, config.frameWidth, config.maxThickness);
-
         attachEdgesToFrame(geometry, width, height, corners);
 
         // Conditionally add hangars based on the parameter
@@ -101,13 +85,7 @@ async function generateSTL(imageUrl, hangars, outputDir, outputFileName, aspectR
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const outputSTLPath = path.join(outputDir, `${outputFileName}-ascii.stl`);
         const outputBinarySTLPath = path.join(outputDir, `${outputFileName}.stl`);
-
-        // Export to STL
-        //const stlString = exportToSTL(geometry);
-        //fs.writeFileSync(outputSTLPath, stlString);
-        //console.log('STL file created successfully:', outputSTLPath);
 
         // Export Binary STL
         const binarySTL = exportToBinarySTL(geometry);
@@ -266,31 +244,6 @@ function addFrame(geometry, width, height, frameWidth, maxThickness) {
         bottomRight: baseIndex + 7,
     };
     return corners;
-}
-
-function exportToSTL(geometry) {
-    const vertices = geometry.getAttribute('position').array;
-    geometry.computeVertexNormals();
-    const indices = geometry.getIndex().array;
-    let stl = 'solid lithophane\n';
-    for (let i = 0; i < indices.length; i += 3) {
-        const index1 = indices[i] * 3;
-        const index2 = indices[i + 1] * 3;
-        const index3 = indices[i + 2] * 3;
-        const v1 = [vertices[index1], vertices[index1 + 1], vertices[index1 + 2]];
-        const v2 = [vertices[index2], vertices[index2 + 1], vertices[index2 + 2]];
-        const v3 = [vertices[index3], vertices[index3 + 1], vertices[index3 + 2]];
-        const normal = calculateNormal(v1, v2, v3);
-        stl += `facet normal ${normal[0]} ${normal[1]} ${normal[2]}\n`;
-        stl += 'outer loop\n';
-        stl += `vertex ${v1[0]} ${v1[1]} ${v1[2]}\n`;
-        stl += `vertex ${v2[0]} ${v2[1]} ${v2[2]}\n`;
-        stl += `vertex ${v3[0]} ${v3[1]} ${v3[2]}\n`;
-        stl += 'endloop\n';
-        stl += 'endfacet\n';
-    }
-    stl += 'endsolid lithophane\n';
-    return stl;
 }
 
 function exportToBinarySTL(geometry) {

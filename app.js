@@ -1,6 +1,8 @@
 const WebSocket = require('ws');
 const generateSTL = require('./generateSTL');
 const path = require('path');
+const fs = require('fs');
+const fetch = require('node-fetch');
 
 async function processOrder(orderID, items) {
     try {
@@ -18,11 +20,22 @@ async function processOrder(orderID, items) {
             for (const [index, image] of item.images.entries()) {
                 console.log('Processing image:', image);
 
-                // Constructing an absolute URL for the image
                 const imageUrl = `https://lithophane-generator-76e9a8bbe995.herokuapp.com/finalized-uploads/${image}`;
                 const outputDir = path.join(__dirname, 'stl-outputs', `order_${orderID}`, `item_${item.itemID}`);
                 const outputFileName = `order_${orderID}_item_${item.itemID}_image_${index + 1}`;
-                await generateSTL(imageUrl, item.hanger, outputDir, outputFileName, aspectRatio);
+
+                // Fetch the image from the server
+                const response = await fetch(imageUrl);
+                const buffer = await response.buffer();
+
+                // Save the image locally
+                const savePath = path.join(outputDir, `${outputFileName}.png`);
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir, { recursive: true });
+                }
+                fs.writeFileSync(savePath, buffer);
+
+                await generateSTL(savePath, item.hanger, outputDir, outputFileName, aspectRatio);
             }
         }
         console.log(`Order ${orderID} processed successfully`);
@@ -30,9 +43,6 @@ async function processOrder(orderID, items) {
         console.error(`Error processing order ${orderID}:`, error);
     }
 }
-
-
-
 
 function createWebSocket() {
     const ws = new WebSocket('wss://lithophane-generator-76e9a8bbe995.herokuapp.com/');
@@ -87,6 +97,8 @@ function startPing(socket) {
 
 // Initial WebSocket connection
 createWebSocket();
+
+
 
 
 
